@@ -17,11 +17,11 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.stream.Collectors;
 
 public class GetOrder {
     public static ArrayList<Order> ordersArr = new ArrayList<>();
+
     public static void getOrdersAtDate(ZonedDateTime localDate) throws IOException {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
         System.out.println( "Заказы за "+ localDate.format(formatter));
