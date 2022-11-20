@@ -2,6 +2,7 @@ package main;
 
 import main.model.Order;
 import main.model.OrderRepository;
+import main.model.OrderSum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -11,6 +12,11 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import static main.OrderFunctionsController.getOrdersMap;
 
 
 @RestController
@@ -45,7 +51,7 @@ public class OrderController {
     }
 
     @RequestMapping("/test")
-    public String test(){
+    public String test() throws IOException {
 //        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         Iterable<Order> orderIterable= orderRepository.findAll();
         ArrayList<Order> orders = new ArrayList<>();
@@ -54,6 +60,17 @@ public class OrderController {
         }
         LocalDate start = LocalDate.of(2022,11,14);
         LocalDate end = LocalDate.of(2022,11,17);
+        HashMap<String, ArrayList<Order>> periodOrdersHashMap = getOrdersMap(orders);
+        ArrayList<OrderSum> orderSums = new ArrayList<>();
+
+        for (Map.Entry<String, ArrayList<Order>> entry : periodOrdersHashMap.entrySet()) {
+            OrderFunctionsController.ordersPerBarcode(entry.getValue());
+            orderSums.add(new OrderSum(entry.getValue()));
+        }
+
+        Collections.sort(orderSums);
+        Collections.reverse(orderSums);
+
         OrderFunctionsController.getOrdersInPeriod(start,end,orders);
         return "TestSucces";
     }

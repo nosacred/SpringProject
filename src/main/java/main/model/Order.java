@@ -193,4 +193,14 @@ public class Order {
     public void setSrid(String srid) {
         this.srid = srid;
     }
+
+    public BigDecimal getTotalPriceWithDisc(){
+
+        return totalPrice.multiply(BigDecimal.valueOf(100- discountPercent)).divide(BigDecimal.valueOf(100));
+    }
+
+    String getWBLink(){
+
+        return "https://www.wildberries.ru/catalog/"+ nmId + "/detail.aspx?targetUrl=BP";
+    }
 }
