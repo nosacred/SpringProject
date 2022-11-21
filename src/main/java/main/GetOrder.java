@@ -11,8 +11,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -43,5 +42,28 @@ public class GetOrder {
         Order[] orders = gson.fromJson(result, Order[].class);
         ArrayList<Order> ord = new ArrayList<>(Arrays.asList(orders));
         ordersArr.addAll(ord);
+    }
+
+    public static ArrayList<Order> getNewOrdersNow() throws IOException {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+        ZonedDateTime zndNow = ZonedDateTime.now(ZoneId.systemDefault()).minusDays(1);
+        System.out.println( "Заказы за "+ zndNow.format(formatter));
+
+        String apiKey = "ZTcyNDEyMWMtMDY2OS00M2VjLWIwMTItNjg2ZjdiYjFjODQx";
+        String linkOrder = "https://suppliers-stats.wildberries.ru/api/v1/supplier/" +
+                "orders?dateFrom="+ zndNow.toLocalDateTime().format(formatter)+ "&flag=0&key=";
+        URL url = new URL(linkOrder + apiKey);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        InputStream response = connection.getInputStream();
+        String result = new BufferedReader(new InputStreamReader(response)).lines()
+                .parallel().collect(Collectors.joining("\n"));
+        System.out.println(result);
+        Gson gson  = new GsonBuilder().registerTypeAdapter(ZonedDateTime.class, GsonHelper.ZDT_DESERIALIZER)
+                .create();
+
+
+        Order[] orders = gson.fromJson(result, Order[].class);
+         return new ArrayList<>(Arrays.asList(orders));
     }
 }

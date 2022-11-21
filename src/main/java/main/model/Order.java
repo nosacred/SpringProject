@@ -4,6 +4,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.ZonedDateTime;
 
 @Entity
@@ -196,7 +197,7 @@ public class Order {
 
     public BigDecimal getTotalPriceWithDisc(){
 
-        return totalPrice.multiply(BigDecimal.valueOf(100- discountPercent)).divide(BigDecimal.valueOf(100));
+        return totalPrice.multiply(BigDecimal.valueOf(100- discountPercent)).divide(BigDecimal.valueOf(100),2,RoundingMode.HALF_UP);
     }
 
     String getWBLink(){

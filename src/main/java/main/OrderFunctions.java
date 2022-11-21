@@ -1,7 +1,5 @@
 package main;
-
 import main.model.Order;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -12,7 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 
-public class OrderFunctionsController {
+public class OrderFunctions {
 
     public static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -28,9 +26,7 @@ public class OrderFunctionsController {
 
            start = start.plusDays(1);
         }
-        for(Order order : orders){
-            System.out.println(order.getDate());
-        }
+
         return orders;
 
     }
@@ -64,4 +60,6 @@ public class OrderFunctionsController {
                 totalPrice + " рублей");
         System.out.println(personalOrder.size());
     }
+
+
 }

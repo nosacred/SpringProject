@@ -1,14 +1,13 @@
 package main.model;
 
-import main.OrderController;
-import main.OrderFunctionsController;
+import com.google.gson.Gson;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
+
 
 public class OrderSum implements Comparable{
     private String name;
@@ -223,6 +222,25 @@ public class OrderSum implements Comparable{
         return sum;
     }
 
+    @Override
+    public String toString() {
+        return "OrderSum{" +
+                "name='" + name + '\'' +
+                ", WBArticle='" + WBArticle + '\'' +
+                ", barcode='" + barcode + '\'' +
+                ", orderDate=" + orderDate +
+                ", orderQuantity=" + orderQuantity +
+                ", totalOrdersPrice=" + totalOrdersPrice +
+                ", category='" + category + '\'' +
+                ", subject='" + subject + '\'' +
+                ", link='" + link + '\'' +
+                ", brand='" + brand + '\'' +
+                ", techSize='" + techSize + '\'' +
+                ", cancelCount=" + cancelCount +
+                ", percentBackOrder=" + percentBackOrder +
+                ", totalLogisticPrice=" + totalLogisticPrice +
+                '}';
+    }
 
     @Override
     public int compareTo(Object o) {
