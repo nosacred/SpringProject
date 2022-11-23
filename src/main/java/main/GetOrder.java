@@ -4,6 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import main.model.Order;
 import main.model.OrderRepository;
+import org.aspectj.weaver.ast.Or;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,10 +21,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+@Component
 public class GetOrder {
-    public static ArrayList<Order> ordersArr = new ArrayList<>();
 
-    public static void getOrdersAtDate(ZonedDateTime localDate) throws IOException {
+    @Autowired
+    OrderRepository orderRepository;
+    private final ArrayList<Order> ordersArr = new ArrayList<>();
+
+    public  void getOrdersAtDate(ZonedDateTime localDate) throws IOException {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
         System.out.println( "Заказы за "+ localDate.format(formatter));
 
@@ -42,11 +49,12 @@ public class GetOrder {
         Order[] orders = gson.fromJson(result, Order[].class);
         ArrayList<Order> ord = new ArrayList<>(Arrays.asList(orders));
         ordersArr.addAll(ord);
+        orderRepository.saveAll(ordersArr);
     }
 
-    public static ArrayList<Order> getNewOrdersNow() throws IOException {
+    public  ArrayList<Order> getNewOrdersNow() throws IOException {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
-        ZonedDateTime zndNow = ZonedDateTime.now(ZoneId.systemDefault()).minusDays(1);
+        ZonedDateTime zndNow = ZonedDateTime.now(ZoneId.systemDefault());
         System.out.println( "Заказы за "+ zndNow.format(formatter));
 
         String apiKey = "ZTcyNDEyMWMtMDY2OS00M2VjLWIwMTItNjg2ZjdiYjFjODQx";
@@ -62,8 +70,9 @@ public class GetOrder {
         Gson gson  = new GsonBuilder().registerTypeAdapter(ZonedDateTime.class, GsonHelper.ZDT_DESERIALIZER)
                 .create();
 
-
         Order[] orders = gson.fromJson(result, Order[].class);
-         return new ArrayList<>(Arrays.asList(orders));
+        ArrayList<Order> newOrders = new ArrayList<>(Arrays.asList(orders));
+        orderRepository.saveAll(newOrders);
+         return newOrders;
     }
 }

@@ -3,15 +3,11 @@ package main;
 import main.model.Order;
 import main.model.OrderRepository;
 import main.model.OrderSum;
-import org.aspectj.weaver.ast.Or;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.context.ApplicationContext;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -19,8 +15,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-import static main.OrderFunctions.formatter;
-import static main.OrderFunctions.getOrdersMap;
+import static main.OrderService.getOrdersMap;
 
 
 @RestController
@@ -29,29 +24,30 @@ public class OrderController {
     @Autowired
     private OrderRepository orderRepository;
 
-    @RequestMapping("/{date}")
-    public  String setOrders(@PathVariable String  date) throws IOException {
+    @Autowired
+    private ApplicationContext context;
+
+    GetOrder  getOrder = context.getBean(GetOrder.class);
+
+    @GetMapping("/get")
+    public  String setOrders(@RequestParam (value = "date",required = false, defaultValue = "2022-11-20T20:20:20") String date) throws IOException {
         DateTimeFormatter formatter
                 = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
         LocalDateTime ld = LocalDateTime.parse(date,formatter);
         ZonedDateTime znd = ZonedDateTime.of(ld,ZoneId.systemDefault());
         System.out.println(znd);
+
         try {
-            GetOrder.getOrdersAtDate(znd);
+
+            getOrder.getOrdersAtDate(znd);
         }
         catch (Exception e){
             e.printStackTrace();
         }
 
-        return "Данные по заказам за " + ld+ " получены";
+        return "Данные по заказам за " + ld.format(formatter)+ " получены";
     }
 
-    @RequestMapping("/push")
-    public void pushOrders(){
-        for(Order order :GetOrder.ordersArr){
-            orderRepository.save(order);
-        }
-    }
 
     @RequestMapping("/show")
     public String showOrders(){
@@ -80,20 +76,20 @@ public class OrderController {
         ArrayList<OrderSum> orderSums = new ArrayList<>();
 
         for (Map.Entry<String, ArrayList<Order>> entry : periodOrdersHashMap.entrySet()) {
-            OrderFunctions.ordersPerBarcode(entry.getValue());
+            OrderService.ordersPerBarcode(entry.getValue());
             orderSums.add(new OrderSum(entry.getValue()));
         }
 
         Collections.sort(orderSums);
         Collections.reverse(orderSums);
 
-        OrderFunctions.getOrdersInPeriod(start,end,orders);
+        OrderService.getOrdersInPeriod(start,end,orders);
         return "TestSucces";
     }
 
     @RequestMapping("/new")
     public String newOrdersNow() throws IOException {
-        ArrayList<Order> newOrders = GetOrder.getNewOrdersNow();
+        ArrayList<Order> newOrders = getOrder.getNewOrdersNow();
         String ret = "<table><tr><th>Предмет</th>" +
                 "<th>Артикул поставщика </th>"+
                 "<th>Размер </th>"+
@@ -105,7 +101,7 @@ public class OrderController {
 
         for(Order order :newOrders){
            ret =  ret.concat("<tr><td>"+ order.getSubject()+"</td>"
-        + "<td>"+ order.getSupplierArticle()+"</td>"+
+        + "<td>"+ "<a href =\""+order.getWBLink()+"\">"+  order.getSupplierArticle()+"</a></td>"+
                    "<td>"+ order.getTechSize()+"</td>"+
                    "<th>"+ order.getTotalPriceWithDisc()+"</th>"+
                    "<td>"+ order.getWarehouseName()+"</td>"+

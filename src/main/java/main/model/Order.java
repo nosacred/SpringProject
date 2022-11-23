@@ -200,7 +200,7 @@ public class Order {
         return totalPrice.multiply(BigDecimal.valueOf(100- discountPercent)).divide(BigDecimal.valueOf(100),2,RoundingMode.HALF_UP);
     }
 
-    String getWBLink(){
+    public String getWBLink(){
 
         return "https://www.wildberries.ru/catalog/"+ nmId + "/detail.aspx?targetUrl=BP";
     }

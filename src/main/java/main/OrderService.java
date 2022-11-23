@@ -1,5 +1,9 @@
 package main;
 import main.model.Order;
+import main.model.OrderRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -9,8 +13,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 
-
-public class OrderFunctions {
+@Service
+public class OrderService {
+    @Autowired
+    private static OrderRepository orderRepository;
 
     public static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -26,6 +32,7 @@ public class OrderFunctions {
 
            start = start.plusDays(1);
         }
+        orderRepository.saveAll(orders);
 
         return orders;
 

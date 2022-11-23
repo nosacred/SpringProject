@@ -1,7 +1,4 @@
 package main.model;
-
-import com.google.gson.Gson;
-
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
