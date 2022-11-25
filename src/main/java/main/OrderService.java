@@ -15,12 +15,13 @@ import java.util.HashSet;
 
 @Service
 public class OrderService {
+
     @Autowired
-    private static OrderRepository orderRepository;
+    private OrderRepository orderRepository;
 
     public static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    public static ArrayList<Order> getOrdersInPeriod(LocalDate start, LocalDate end, ArrayList<Order> ordersIn){
+    public ArrayList<Order> getOrdersInPeriod(LocalDate start, LocalDate end, ArrayList<Order> ordersIn){
         ArrayList<Order> orders = new ArrayList<>();
 
         while (!start.isAfter(end)) {
@@ -38,7 +39,7 @@ public class OrderService {
 
     }
 
-    public static HashMap<String,ArrayList<Order>> getOrdersMap(ArrayList<Order> orders){
+    public  HashMap<String,ArrayList<Order>> getOrdersMap(ArrayList<Order> orders){
         HashSet<String> barcodes = new HashSet<>();
         HashMap<String,ArrayList<Order>> ordersMap = new HashMap<>();
         for(Order order : orders){
@@ -55,7 +56,7 @@ public class OrderService {
         }
         return ordersMap; // возвращаем карту с заказами
     }
-    public static void ordersPerBarcode(ArrayList<Order> personalOrder){
+    public  void ordersPerBarcode(ArrayList<Order> personalOrder){
         String articleName;
         personalOrder.sort(Comparator.comparing(Order::getTotalPrice));
         BigDecimal totalPrice= new BigDecimal("0");

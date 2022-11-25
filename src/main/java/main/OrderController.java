@@ -4,7 +4,6 @@ import main.model.Order;
 import main.model.OrderRepository;
 import main.model.OrderSum;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -15,19 +14,19 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-import static main.OrderService.getOrdersMap;
 
 
 @RestController
 public class OrderController {
-
     @Autowired
     private OrderRepository orderRepository;
-
     @Autowired
-    private ApplicationContext context;
+    private GetOrder getOrder;
+    @Autowired
+    private OrderService orderService;
 
-    GetOrder  getOrder = context.getBean(GetOrder.class);
+
+
 
     @GetMapping("/get")
     public  String setOrders(@RequestParam (value = "date",required = false, defaultValue = "2022-11-20T20:20:20") String date) throws IOException {
@@ -39,7 +38,7 @@ public class OrderController {
 
         try {
 
-            getOrder.getOrdersAtDate(znd);
+            getOrder.getAllOrdersAtDate(znd);
         }
         catch (Exception e){
             e.printStackTrace();
@@ -72,18 +71,18 @@ public class OrderController {
         }
         LocalDate start = LocalDate.of(2022,11,14);
         LocalDate end = LocalDate.of(2022,11,17);
-        HashMap<String, ArrayList<Order>> periodOrdersHashMap = getOrdersMap(orders);
+        HashMap<String, ArrayList<Order>> periodOrdersHashMap = orderService.getOrdersMap(orders);
         ArrayList<OrderSum> orderSums = new ArrayList<>();
 
         for (Map.Entry<String, ArrayList<Order>> entry : periodOrdersHashMap.entrySet()) {
-            OrderService.ordersPerBarcode(entry.getValue());
+            orderService.ordersPerBarcode(entry.getValue());
             orderSums.add(new OrderSum(entry.getValue()));
         }
 
         Collections.sort(orderSums);
         Collections.reverse(orderSums);
 
-        OrderService.getOrdersInPeriod(start,end,orders);
+        orderService.getOrdersInPeriod(start,end,orders);
         return "TestSucces";
     }
 
@@ -99,8 +98,11 @@ public class OrderController {
                 "<th>Дата заказа </th>"+
                 "<th>Бренд </th></tr>";
 
+        int i =1;
         for(Order order :newOrders){
-           ret =  ret.concat("<tr><td>"+ order.getSubject()+"</td>"
+
+           ret =  ret.concat("<tr>" +"<td>"+ i+"</td>"+
+                   "<td>"+ order.getSubject()+"</td>"
         + "<td>"+ "<a href =\""+order.getWBLink()+"\">"+  order.getSupplierArticle()+"</a></td>"+
                    "<td>"+ order.getTechSize()+"</td>"+
                    "<th>"+ order.getTotalPriceWithDisc()+"</th>"+
@@ -108,6 +110,7 @@ public class OrderController {
                    "<td>"+ order.getOblast()+"</td>"+
                    "<td>"+ order.getDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))+"</td>"+
                    "<td>"+ order.getBrand()+"</td></tr>");
+           i++;
         }
         ret = ret.concat("</table");
         return ret;
