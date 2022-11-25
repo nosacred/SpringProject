@@ -20,10 +20,13 @@ public class DefaultController {
 
     @Autowired
     private GetOrder getOrder;
-    @Autowired
-    private OrderService orderService;
+
     @Autowired
     private GetSale getSale;
+
+    @Autowired
+    private GetStock getStock;
+
 
     @RequestMapping("/")
     public String index(){
@@ -53,6 +56,12 @@ public class DefaultController {
 
 
         return "Процесс выполнен";
+    }
+
+    @GetMapping("/stock")
+    public String stock() throws IOException {
+        getStock.getAllStocks();
+        return "Остатки получены";
     }
 
 
