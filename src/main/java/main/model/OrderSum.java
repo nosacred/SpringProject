@@ -12,7 +12,7 @@ public class OrderSum implements Comparable{
     private String barcode;
     private LocalDate orderDate;
     private int orderQuantity;
-    private BigDecimal totalOrdersPrice;
+    private BigDecimal totalOrdersPriceSum;
     private String category;
     private String subject;
     private String link;
@@ -71,12 +71,12 @@ public class OrderSum implements Comparable{
         this.orderQuantity = orderQuantity;
     }
 
-    public BigDecimal getTotalOrdersPrice() {
-        return totalOrdersPrice;
+    public BigDecimal getTotalOrdersPriceSum() {
+        return totalOrdersPriceSum;
     }
 
-    public void setTotalOrdersPrice(BigDecimal totalOrdersPrice) {
-        this.totalOrdersPrice = totalOrdersPrice;
+    public void setTotalOrdersPriceSum(BigDecimal totalOrdersPriceSum) {
+        this.totalOrdersPriceSum = totalOrdersPriceSum;
     }
 
     public String getCategory() {
@@ -137,7 +137,7 @@ public class OrderSum implements Comparable{
         this.barcode = ordersPerBarCode.get(0).getBarcode();
         this.orderDate = ordersPerBarCode.get(0).getDate().toLocalDate();
         this.orderQuantity = ordersPerBarCode.size();
-        this.totalOrdersPrice = getTotalOrdersPrice(ordersPerBarCode);
+        this.totalOrdersPriceSum = getTotalOrdersPrice(ordersPerBarCode);
         this.category = ordersPerBarCode.get(0).getCategory();
         this.subject = ordersPerBarCode.get(0).getSubject();
         this.link = ordersPerBarCode.get(0).getWBLink();
@@ -147,6 +147,7 @@ public class OrderSum implements Comparable{
         this.totalLogisticPrice = getTotalLogisticPrice(ordersPerBarCode);
         this.brand = ordersPerBarCode.get(0).getBrand();
         this.techSize = ordersPerBarCode.get(0).getTechSize();
+
 
     }
     private void getPercentBackOrder(){
@@ -171,7 +172,7 @@ public class OrderSum implements Comparable{
     private BigDecimal getTotalOrdersPrice(ArrayList<Order> orders){
         BigDecimal totalSum = new BigDecimal("0");
         for (Order order : orders) {
-            totalSum= totalSum.add(order.getTotalPrice()).setScale(2, RoundingMode.HALF_UP);
+            totalSum= totalSum.add(order.getTotalPriceWithDisc()).setScale(2, RoundingMode.HALF_UP);
         }
         return  totalSum;
     }
@@ -227,7 +228,7 @@ public class OrderSum implements Comparable{
                 ", barcode='" + barcode + '\'' +
                 ", orderDate=" + orderDate +
                 ", orderQuantity=" + orderQuantity +
-                ", totalOrdersPrice=" + totalOrdersPrice +
+                ", totalOrdersPrice=" + totalOrdersPriceSum +
                 ", category='" + category + '\'' +
                 ", subject='" + subject + '\'' +
                 ", link='" + link + '\'' +

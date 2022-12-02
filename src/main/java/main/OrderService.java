@@ -1,43 +1,30 @@
 package main;
+import main.model.CustomOrderRepository;
 import main.model.Order;
 import main.model.OrderRepository;
+import main.model.OrderSum;
+import org.aspectj.weaver.ast.Or;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 
 @Service
 public class OrderService {
 
     @Autowired
     private OrderRepository orderRepository;
+    @Autowired
+    private CustomOrderRepository customOrderRepository;
 
     public static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    public ArrayList<Order> getOrdersInPeriod(LocalDate start, LocalDate end, ArrayList<Order> ordersIn){
-        ArrayList<Order> orders = new ArrayList<>();
-
-        while (!start.isAfter(end)) {
-            for(Order order : ordersIn){
-                if(order.getDate().format(formatter).equals(start.format(formatter))){
-                    orders.add(order);
-                }
-            }
-
-           start = start.plusDays(1);
-        }
-        orderRepository.saveAll(orders);
-
-        return orders;
-
-    }
 
     public  HashMap<String,ArrayList<Order>> getOrdersMap(ArrayList<Order> orders){
         HashSet<String> barcodes = new HashSet<>();
@@ -69,6 +56,40 @@ public class OrderService {
         System.out.println(personalOrder.size());
     }
 
+    public ArrayList<OrderSum> ordersSumInPeriod (ZonedDateTime start, ZonedDateTime end) throws IOException {
+// Получаем эррей с заказами за период времени из БД
+        start = start.withHour(0).withMinute(0).withSecond(0);
+        end = end.withHour(23).withMinute(59).withSecond(59);
+
+
+        List<Order> optional=  customOrderRepository.findOrderByDateBetweenOrderByDate( start,end);
+        ArrayList<Order> orderArrayList = (ArrayList< Order >) optional;
+        HashMap<String, ArrayList<Order>> hashMap = getOrdersMap(orderArrayList);
+        ArrayList<OrderSum> orderSums = new ArrayList<>();
+
+        for (Map.Entry<String, ArrayList<Order>> entry : hashMap.entrySet()) {
+            orderSums.add(new OrderSum(entry.getValue()));
+        }
+
+        return  orderSums;
+    }
+
+    public ArrayList<OrderSum> ordersSumInDay(ZonedDateTime start) throws IOException {
+        // ПОлучаем эррей суммы заказов за конкретную дату из БД
+        start = start.withHour(0).withMinute(0).withSecond(0);
+        ZonedDateTime end = start.withSecond(59).withHour(23).withMinute(59);
+
+        List<Order> optional=  customOrderRepository.findOrderByDateBetweenOrderByDate(start,end);
+        ArrayList<Order> orderArrayList = (ArrayList< Order >) optional;
+        HashMap<String, ArrayList<Order>> hashMap = getOrdersMap(orderArrayList);
+        ArrayList<OrderSum> orderSums = new ArrayList<>();
+
+        for (Map.Entry<String, ArrayList<Order>> entry : hashMap.entrySet()) {
+            orderSums.add(new OrderSum(entry.getValue()));
+        }
+
+        return  orderSums;
+    }
 
 
 
