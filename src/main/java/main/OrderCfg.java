@@ -14,7 +14,7 @@ public class OrderCfg {
     public GetOrder getGetOrder(){
         return  new GetOrder();
     }
-
-
+    @Bean
+    public PhotoBaseService getPhotoBaseService(){return new PhotoBaseService();}
 
 }

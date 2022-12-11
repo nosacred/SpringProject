@@ -29,6 +29,9 @@ import java.util.stream.Collectors;
 public class GetOrder {
     @Autowired
     OrderRepository orderRepository;
+    @Autowired
+    PhotoBaseService photoBaseService;
+
     DateTimeFormatter formatterDAteTime = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
     DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private final String apiKey = "ZTcyNDEyMWMtMDY2OS00M2VjLWIwMTItNjg2ZjdiYjFjODQx";
@@ -56,6 +59,14 @@ public class GetOrder {
         Order[] orders = gson.fromJson(result, Order[].class);
         ArrayList<Order> ord = new ArrayList<>(Arrays.asList(orders));
         orderRepository.saveAll(ord);
+        ord.forEach(order -> {
+            try {
+                photoBaseService.setPhotos(order.getNmId());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
         System.out.println("Заказов добавлено/ Обновленно за "+localDate.format(formatterDate) + " " + ord.size() + " штук");
     }
 

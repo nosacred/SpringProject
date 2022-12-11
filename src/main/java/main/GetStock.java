@@ -31,7 +31,7 @@ public class GetStock {
 
         DateTimeFormatter formatterDateTime = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
         DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        ZonedDateTime localDate = ZonedDateTime.now(ZoneId.systemDefault()).minusDays(2);
+        ZonedDateTime localDate = ZonedDateTime.now(ZoneId.systemDefault()).minusDays(1);
         System.out.println("Остатки за " + localDate.format(formatterDate));
         String apiKey = "ZTcyNDEyMWMtMDY2OS00M2VjLWIwMTItNjg2ZjdiYjFjODQx";
         String linkOrder = "https://suppliers-stats.wildberries.ru/api/v1/supplier/" +
