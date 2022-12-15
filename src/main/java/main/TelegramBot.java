@@ -326,15 +326,16 @@ private void sendNewOrders() throws IOException, InterruptedException, TelegramA
 
 
 public void firstMesseges(long chatId) throws TelegramApiException, IOException, InterruptedException {
-    if(LocalDate.now().isEqual(today.toLocalDate().plusDays(1))){
-        getGetOrder.getAllOrdersAtDate(today);
-        yesterDay = today;
-        today = today.plusDays(1);
-        sumToday = BigDecimal.ZERO;
-        todayOrders.clear();
-    }
+//    if(LocalDate.now().isEqual(today.toLocalDate().plusDays(1))){
+//        getGetOrder.getAllOrdersAtDate(today);
+//        yesterDay = today;
+//        today = today.plusDays(1);
+//        sumToday = BigDecimal.ZERO;
+//        todayOrders.clear();
+//    }
     int firstCount= 1;
-
+    BigDecimal sumTodayFirst = BigDecimal.ZERO;
+    int sendCount=1;
 
     ArrayList<Order> firstOrders =(ArrayList< Order >)customOrderRepository.
             findOrderByDateBetweenOrderByDate(today.withHour(0).withMinute(0).withSecond(0),
@@ -351,8 +352,8 @@ public void firstMesseges(long chatId) throws TelegramApiException, IOException,
                 for (Order os : qnSum) {
                     yestSum = yestSum.add(os.getTotalPriceWithDisc());
                 }
-                int todayCount = (int) todayOrders.stream().filter(order1 -> order1.getBarcode().equals(order.getBarcode())).count();
-                BigDecimal todaySum = BigDecimal.ZERO;
+                int todayCount = (int) todayOrders.stream().filter(order1 -> order1.getBarcode().equals(order.getBarcode())).count()+1;
+                BigDecimal todaySum = order.getTotalPriceWithDisc();
                 List<Order> qnSumtoday = todayOrders.stream().filter(order1 -> order1.getBarcode().equals(order.getBarcode())).collect(Collectors.toList());
                 for (Order os : qnSumtoday) {
                     todaySum = todaySum.add(os.getTotalPriceWithDisc());
@@ -364,7 +365,7 @@ public void firstMesseges(long chatId) throws TelegramApiException, IOException,
                 } else {
                     dt = ":calendar:<b>" + order.getDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) + "</b>\n" +
                             ":chart_with_upwards_trend:<b>Заказ: [" + firstCount + "]</b>\n";
-                    sumToday = sumToday.add(order.getTotalPriceWithDisc());
+                    sumTodayFirst = sumTodayFirst.add(order.getTotalPriceWithDisc());
                     firstCount++;
                 }
                 BigDecimal yesterDayAllOrdSum = BigDecimal.ZERO;
@@ -383,7 +384,6 @@ public void firstMesseges(long chatId) throws TelegramApiException, IOException,
 
 
                 String text = EmojiParser.parseToUnicode(dt + cancel + orderPrice +
-
                         ":package:<b>" + order.getSupplierArticle() + "</b>\n" +
                         "id:<a href=\"" + order.getWBLink() + "\">" + order.getNmId() + "</a>\n" +
                         ":gear:" + order.getBrand() + "\n" +
@@ -397,11 +397,17 @@ public void firstMesseges(long chatId) throws TelegramApiException, IOException,
                         " шт на " + df.format(yestSum) + "</b>" + "\u20BD" + "\n" +
                         ":house:<b>" + order.getWarehouseName() + "</b>:arrow_right:" + order.getOblast() + "\n" +
                         ":dart:<strong>СЕГОДНЯ заказов: " + (firstCount - 1) + "&#128293;" + "</strong> на СУММУ" + "\n" +
-                        ":moneybag: <b>" + df.format(sumToday) + "\u20BD" + "</b>" +
+                        ":moneybag: <b>" + df.format(sumTodayFirst) + "\u20BD" + "</b>" +
                         "\n<i> Вчера заказано <b>" + yestOrders.size() + "</b> штук на " + df.format(yesterDayAllOrdSum) + "</i>" + "\u20BD");
                 sendPhoto.setCaption(text);
+
                 sendPhoto.setParseMode(ParseMode.HTML);
                 execute(sendPhoto);
+                sendCount++;
+                if(sendCount == 10){
+                    TimeUnit.SECONDS.sleep(2);
+                    sendCount = 0;
+                }
         }
     }
 
