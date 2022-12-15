@@ -5,6 +5,7 @@ import com.vdurmont.emoji.EmojiParser;
 import lombok.SneakyThrows;
 import main.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.converter.json.GsonBuilderUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -182,7 +183,7 @@ private void allOrdersToDay (long chatId) throws IOException, InterruptedExcepti
      void startArrays() {
 //        getGetOrder.getAllOrdersAtDate(yesterDay);
         todayOrders= (ArrayList<Order>) customOrderRepository.findOrderByDateBetweenOrderByDate(today.withHour(0).
-                withMinute(0).withSecond(0),ZonedDateTime.now(ZoneId.systemDefault()));
+                withMinute(0).withSecond(0),ZonedDateTime.now(ZoneId.systemDefault()).minusMinutes(15));
          todayOrders.sort(Comparator.comparing(Order::getDate));
         yestOrders = (ArrayList<Order>) customOrderRepository.findOrderByDateBetweenOrderByDate(yesterDay.withHour(0).
                 withMinute(0).withSecond(0),yesterDay.withHour(23).
@@ -197,7 +198,7 @@ private void allOrdersToDay (long chatId) throws IOException, InterruptedExcepti
          System.out.println("Вчерашнее кол-во заказов - "+ yestOrders.size());
 }
 
-@Scheduled(initialDelay = 10000,fixedRate = 15*60*1000 )
+@Scheduled(initialDelay = 10000,fixedRate = 20*60*1000 )
 private void sendNewOrders() throws IOException, InterruptedException, TelegramApiException {
     List<TgUser> users = (List<TgUser>) tgUserRepository.findAll();
     yestOrders = (ArrayList<Order>) customOrderRepository.
@@ -207,16 +208,24 @@ private void sendNewOrders() throws IOException, InterruptedException, TelegramA
 //    startArrays();
     // Обновляем данные если наступили новые сутки
     int ordersCountoday= todayOrders.size();
+    System.out.println("азмер архива заказов за сегодня: "+ordersCountoday);
     if (LocalDate.now().isEqual(today.toLocalDate().plusDays(1))) {
         getGetOrder.getAllOrdersAtDate(today);
         yesterDay = today;
         today = today.plusDays(1);
         todayOrders.clear();
-        ordersCountoday = 0;
+//        ordersCountoday = 0;
         sumToday = BigDecimal.ZERO;
         startArrays();
 
     }
+    sumToday= BigDecimal.ZERO;
+    todayOrders.sort(Comparator.comparing(Order::getDate));
+    for(Order order : todayOrders) {
+        sumToday = sumToday.add(order.getTotalPriceWithDisc());
+    }
+    System.out.println("Сумма заказов из архива: "+ sumToday);
+
     ArrayList<Order> orders = getGetOrder.getNewOrdersNow();
     orders.sort(Comparator.comparing(Order::getDate));
 
@@ -249,20 +258,19 @@ private void sendNewOrders() throws IOException, InterruptedException, TelegramA
 
         String dt = "";
         if (order.getDate().toLocalDate().isBefore(today.toLocalDate())) {
-            dt = ":calendar:<b>Вчерашний заказ</b>\n" +
+            dt = ":calendar:<b>Заказ за прошедшую дату!</b>\n" +
                     ":calendar:<b><i>" + order.getDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) + "</i></b>\n";
 
 
-        } else if(todayOrders.contains(order)) {
-            dt = ":calendar:<b>" + order.getDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) + "</b>\n" +
-                    ":chart_with_upwards_trend:<b>Заказ: [" + todayOrders.indexOf(order)+1 + "]</b>\n";
-//            sumToday = sumToday.add(order.getTotalPriceWithDisc());
+        } else if(todayOrders.contains(order) || yestOrders.contains(order)) {
+            continue;
         }
         else {
             ordersCountoday++;
             dt = ":calendar:<b>" + order.getDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) + "</b>\n" +
                     ":chart_with_upwards_trend:<b>Заказ: [" + ordersCountoday + "]</b>\n";
             sumToday = sumToday.add(order.getTotalPriceWithDisc());
+            System.out.println(" Сумма заказов с заказом [" +ordersCountoday + "] = "+ sumToday);
         }
 
 
@@ -281,7 +289,7 @@ private void sendNewOrders() throws IOException, InterruptedException, TelegramA
                 ":green_book:" + order.getCategory() + " / " +
                 order.getSubject() + "\n" +
                 ":triangular_ruler:" + order.getTechSize() + "\n" +
-                ":truck:Логистика: <b>" + order.getLogisticPrice() + "\u20BD" + "</b>" + "\n" +
+                ":truck:Логистика(min): <b>" + order.getLogisticPrice() + "\u20BD" + "</b>" + "\n" +
                 ":rocket:<b>Сегодня таких " + todayCount +
                 " шт на  " + df.format(todaySum) + "</b>" + "\u20BD" + "\n" +
                 "Вчера таких <b>" + yestCount +
@@ -305,20 +313,11 @@ private void sendNewOrders() throws IOException, InterruptedException, TelegramA
             TimeUnit.SECONDS.sleep(2);
             sendCount = 0;
         }
-//        for (Order o : orders) {
-//            if (o.getDate().toLocalDate().equals(today.toLocalDate()) && !todayOrders.contains(o)) {
-//                todayOrders.add(o);
-//            } else if (o.getDate().toLocalDate().equals(yesterDay.toLocalDate()) && !yestOrders.contains(o)) {
-//                yestOrders.add(o);
-//                System.out.println("Добавлен вчерашний заказ");
-//            }
 
-//            } else System.out.println("Заказ уже был обработан: " + order.getOdid() + " " + order.getSupplierArticle() +
-//                    " " + order.getDate());
-//        }
-        orderRepository.saveAll(orders);
-        todayOrders.clear();
     }
+    orderRepository.saveAll(orders);
+    todayOrders.clear();
+    sumToday= BigDecimal.ZERO;
 }
 
 
@@ -385,12 +384,12 @@ public void firstMesseges(long chatId) throws TelegramApiException, IOException,
 
                 String text = EmojiParser.parseToUnicode(dt + cancel + orderPrice +
                         ":package:<b>" + order.getSupplierArticle() + "</b>\n" +
-                        "id:<a href=\"" + order.getWBLink() + "\">" + order.getNmId() + "</a>\n" +
+                        ":id:<a href=\"" + order.getWBLink() + "\">" + order.getNmId() + "</a>\n" +
                         ":gear:" + order.getBrand() + "\n" +
                         ":green_book:" + order.getCategory() + " / " +
                         order.getSubject() + "\n" +
                         ":triangular_ruler:" + order.getTechSize() + "\n" +
-                        ":truck:Логистика: <b>" + order.getLogisticPrice() + "\u20BD" + "</b>" + "\n" +
+                        ":truck:Логистика(min): <b>" + order.getLogisticPrice() + "\u20BD" + "</b>" + "\n" +
                         ":rocket:<b>Сегодня таких " + todayCount +
                         " шт на  " + df.format(todaySum) + "</b>" + "\u20BD" + "\n" +
                         "Вчера таких <b>" + yestCount +
