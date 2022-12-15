@@ -1,36 +1,28 @@
 package main;
 
+import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.vdurmont.emoji.EmojiParser;
 import lombok.SneakyThrows;
-import main.model.CustomOrderRepository;
-import main.model.Order;
-import main.model.OrderSum;
+import main.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
+import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
-import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScopeDefault;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
-import java.net.URI;
-import java.net.URL;
+import java.text.DecimalFormat;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -42,14 +34,24 @@ public class TelegramBot extends TelegramLongPollingBot {
     @Autowired
     CustomOrderRepository customOrderRepository;
     @Autowired
+    OrderRepository orderRepository;
+    @Autowired
     GetSale getGetSale;
     @Autowired
     OrderService orderService;
     @Autowired
     PhotoBaseService photoBaseService;
+    @Autowired
+    TgUserRepository tgUserRepository;
 
 
 
+    private ZonedDateTime today = ZonedDateTime.now(ZoneId.systemDefault());
+    private ZonedDateTime yesterDay = today.minusDays(1);
+    private BigDecimal sumToday = BigDecimal.ZERO;
+
+    private ArrayList<Order> todayOrders = new ArrayList<>();
+    private ArrayList<Order> yestOrders = new ArrayList<>();
     @Autowired
     final BotConfig botConfig;
 
@@ -89,10 +91,12 @@ public class TelegramBot extends TelegramLongPollingBot {
             long chatId = update.getMessage().getChatId();
             switch (messageText){
                 case "/start":
+                    TgUser tgUser = new TgUser();
+                    tgUser.setChatId(chatId);
+                    tgUser.setFirstName(update.getMessage().getChat().getFirstName());
+                    tgUserRepository.save(tgUser);
                     startCommandReceived(chatId,update.getMessage().getChat().getFirstName());
-                    ZonedDateTime znd = ZonedDateTime.now(ZoneId.systemDefault()).minusDays(0);
-                    getGetOrder.getAllOrdersAtDate(znd);
-                    getGetSale.getAllSalesAtDate(znd);
+                    firstMesseges(chatId);
                     break;
                 case "/today":
                     allOrdersToDay(chatId);
@@ -102,6 +106,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
 }
+
 
 private void allOrdersToDay (long chatId) throws IOException, InterruptedException, TelegramApiException {
 
@@ -172,6 +177,236 @@ private void allOrdersToDay (long chatId) throws IOException, InterruptedExcepti
         execute(sendPhoto);
     }
 }
+
+
+     void startArrays() {
+//        getGetOrder.getAllOrdersAtDate(yesterDay);
+        todayOrders= (ArrayList<Order>) customOrderRepository.findOrderByDateBetweenOrderByDate(today.withHour(0).
+                withMinute(0).withSecond(0),ZonedDateTime.now(ZoneId.systemDefault()));
+         todayOrders.sort(Comparator.comparing(Order::getDate));
+        yestOrders = (ArrayList<Order>) customOrderRepository.findOrderByDateBetweenOrderByDate(yesterDay.withHour(0).
+                withMinute(0).withSecond(0),yesterDay.withHour(23).
+                withMinute(59).withSecond(59));
+        sumToday = BigDecimal.ZERO;
+         todayOrders.sort(Comparator.comparing(Order::getDate));
+        for(Order order : todayOrders) {
+            sumToday = sumToday.add(order.getTotalPriceWithDisc());
+        }
+
+         System.out.println("Cегодняшнее кол-во заказов - "+ todayOrders.size());
+         System.out.println("Вчерашнее кол-во заказов - "+ yestOrders.size());
+}
+
+@Scheduled(initialDelay = 10000,fixedRate = 15*60*1000 )
+private void sendNewOrders() throws IOException, InterruptedException, TelegramApiException {
+    List<TgUser> users = (List<TgUser>) tgUserRepository.findAll();
+    yestOrders = (ArrayList<Order>) customOrderRepository.
+            findOrderByDateBetweenOrderByDate(yesterDay.withHour(0).withMinute(0).withSecond(0),
+                    yesterDay.withHour(23).withMinute(59).withSecond(59));
+//    todayOrders.clear();
+//    startArrays();
+    // Обновляем данные если наступили новые сутки
+    int ordersCountoday= todayOrders.size();
+    if (LocalDate.now().isEqual(today.toLocalDate().plusDays(1))) {
+        getGetOrder.getAllOrdersAtDate(today);
+        yesterDay = today;
+        today = today.plusDays(1);
+        todayOrders.clear();
+        ordersCountoday = 0;
+        sumToday = BigDecimal.ZERO;
+        startArrays();
+
+    }
+    ArrayList<Order> orders = getGetOrder.getNewOrdersNow();
+    orders.sort(Comparator.comparing(Order::getDate));
+
+    for (Order order : orders) {
+        BigDecimal yesterDayAllOrdSum = BigDecimal.ZERO;
+        for (Order order1 : yestOrders) {
+            yesterDayAllOrdSum = yesterDayAllOrdSum.add(order1.getTotalPriceWithDisc());
+        }
+//        if (!todayOrders.contains(order) || order.getLastChangeDate().isAfter(ZonedDateTime.now(ZoneId.systemDefault()).minusMinutes(41))) {
+        int sendCount = 0;
+
+        SendPhoto sendPhoto = new SendPhoto();
+        InputFile photo = new InputFile(photoBaseService.getPhotoLink(order.getNmId()));
+        sendPhoto.setPhoto(photo);
+        int yestCount = (int) yestOrders.stream().filter(order1 -> order1.getBarcode().equals(order.getBarcode())).count();
+        BigDecimal yestSum = BigDecimal.ZERO;
+        List<Order> qnSumYest = yestOrders.stream().filter(order1 -> order1.getBarcode().equals(order.getBarcode())).collect(Collectors.toList());
+        for (Order os : qnSumYest) {
+            yestSum = yestSum.add(os.getTotalPriceWithDisc());
+        }
+
+
+        int todayCount = (int) todayOrders.stream().filter(order1 -> order1.getBarcode().equals(order.getBarcode())).count() + 1;
+        BigDecimal todaySum = order.getTotalPriceWithDisc();
+        List<Order> qnSumtoday = todayOrders.stream().filter(order1 -> order1.getBarcode().equals(order.getBarcode())).collect(Collectors.toList());
+        for (Order os : qnSumtoday) {
+            todaySum = todaySum.add(os.getTotalPriceWithDisc());
+        }
+
+
+        String dt = "";
+        if (order.getDate().toLocalDate().isBefore(today.toLocalDate())) {
+            dt = ":calendar:<b>Вчерашний заказ</b>\n" +
+                    ":calendar:<b><i>" + order.getDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) + "</i></b>\n";
+
+
+        } else if(todayOrders.contains(order)) {
+            dt = ":calendar:<b>" + order.getDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) + "</b>\n" +
+                    ":chart_with_upwards_trend:<b>Заказ: [" + todayOrders.indexOf(order)+1 + "]</b>\n";
+//            sumToday = sumToday.add(order.getTotalPriceWithDisc());
+        }
+        else {
+            ordersCountoday++;
+            dt = ":calendar:<b>" + order.getDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) + "</b>\n" +
+                    ":chart_with_upwards_trend:<b>Заказ: [" + ordersCountoday + "]</b>\n";
+            sumToday = sumToday.add(order.getTotalPriceWithDisc());
+        }
+
+
+        DecimalFormat df = new DecimalFormat("### ###,000");
+        String cancel = "";
+        String orderPrice = ":dollar:<b>" + df.format(order.getTotalPriceWithDisc()) + "\u20BD" + "</b>" + "\n" ;
+        if(order.getIsCancel().equals("true")){
+            cancel = ":name_badge: <b>ЗАКАЗ ОТМЕНЕН!</b>:name_badge:\n";
+            orderPrice = ":stop_sign:<b>-" + df.format(order.getTotalPriceWithDisc()) + "\u20BD" + "</b>" + "\n" ;
+        }
+
+        String text = EmojiParser.parseToUnicode(dt + cancel + orderPrice +
+                ":package:<b>" + order.getSupplierArticle() + "</b>\n" +
+                ":id:<a href=\"" + order.getWBLink() + "\">" + order.getNmId() + "</a>\n" +
+                ":gear:" + order.getBrand() + "\n" +
+                ":green_book:" + order.getCategory() + " / " +
+                order.getSubject() + "\n" +
+                ":triangular_ruler:" + order.getTechSize() + "\n" +
+                ":truck:Логистика: <b>" + order.getLogisticPrice() + "\u20BD" + "</b>" + "\n" +
+                ":rocket:<b>Сегодня таких " + todayCount +
+                " шт на  " + df.format(todaySum) + "</b>" + "\u20BD" + "\n" +
+                "Вчера таких <b>" + yestCount +
+                " шт на " + df.format(yestSum) + "</b>" + "\u20BD" + "\n" +
+                ":house:<b>" + order.getWarehouseName() + "</b>:arrow_right:" + order.getOblast() + "\n" +
+                ":dart:<strong>СЕГОДНЯ заказов: " + (ordersCountoday - 1) + "&#128293;" + "</strong> на СУММУ" +
+                ":moneybag: <b>" + df.format(sumToday) + "\u20BD" + "</b>" +
+                "\n<i> Вчера заказано " + yestOrders.size() + " штук на " + df.format(yesterDayAllOrdSum) + "</i>" + "\u20BD");
+        sendPhoto.setCaption(text);
+        sendPhoto.setParseMode(ParseMode.HTML);
+
+        sendPhoto.setChatId(Long.valueOf(668797978));
+        execute(sendPhoto);
+//        for(TgUser user : users){
+//            sendPhoto.setChatId(user.getChatId());
+//            execute(sendPhoto);
+//        }
+
+        sendCount++;
+        if (sendCount == 10) {
+            TimeUnit.SECONDS.sleep(2);
+            sendCount = 0;
+        }
+//        for (Order o : orders) {
+//            if (o.getDate().toLocalDate().equals(today.toLocalDate()) && !todayOrders.contains(o)) {
+//                todayOrders.add(o);
+//            } else if (o.getDate().toLocalDate().equals(yesterDay.toLocalDate()) && !yestOrders.contains(o)) {
+//                yestOrders.add(o);
+//                System.out.println("Добавлен вчерашний заказ");
+//            }
+
+//            } else System.out.println("Заказ уже был обработан: " + order.getOdid() + " " + order.getSupplierArticle() +
+//                    " " + order.getDate());
+//        }
+        orderRepository.saveAll(orders);
+        todayOrders.clear();
+    }
+}
+
+
+
+
+
+public void firstMesseges(long chatId) throws TelegramApiException, IOException, InterruptedException {
+    if(LocalDate.now().isEqual(today.toLocalDate().plusDays(1))){
+        getGetOrder.getAllOrdersAtDate(today);
+        yesterDay = today;
+        today = today.plusDays(1);
+        sumToday = BigDecimal.ZERO;
+        todayOrders.clear();
+    }
+    int firstCount= 1;
+
+
+    ArrayList<Order> firstOrders =(ArrayList< Order >)customOrderRepository.
+            findOrderByDateBetweenOrderByDate(today.withHour(0).withMinute(0).withSecond(0),
+                    today.minusMinutes(15));
+    firstOrders.sort(Comparator.comparing(Order::getDate));
+        for (Order order : firstOrders) {
+                SendPhoto sendPhoto = new SendPhoto();
+                InputFile photo = new InputFile(photoBaseService.getPhotoLink(order.getNmId()));
+                sendPhoto.setChatId(chatId);
+                sendPhoto.setPhoto(photo);
+                int yestCount = (int) yestOrders.stream().filter(order1 -> order1.getBarcode().equals(order.getBarcode())).count();
+                BigDecimal yestSum = BigDecimal.ZERO;
+                List<Order> qnSum = yestOrders.stream().filter(order1 -> order1.getBarcode().equals(order.getBarcode())).collect(Collectors.toList());
+                for (Order os : qnSum) {
+                    yestSum = yestSum.add(os.getTotalPriceWithDisc());
+                }
+                int todayCount = (int) todayOrders.stream().filter(order1 -> order1.getBarcode().equals(order.getBarcode())).count();
+                BigDecimal todaySum = BigDecimal.ZERO;
+                List<Order> qnSumtoday = todayOrders.stream().filter(order1 -> order1.getBarcode().equals(order.getBarcode())).collect(Collectors.toList());
+                for (Order os : qnSumtoday) {
+                    todaySum = todaySum.add(os.getTotalPriceWithDisc());
+                }
+                String dt = "";
+                if (order.getDate().toLocalDate().isBefore(today.toLocalDate())) {
+                    dt = ":calendar:<b>Вчерашний заказ</b>\n";
+
+                } else {
+                    dt = ":calendar:<b>" + order.getDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) + "</b>\n" +
+                            ":chart_with_upwards_trend:<b>Заказ: [" + firstCount + "]</b>\n";
+                    sumToday = sumToday.add(order.getTotalPriceWithDisc());
+                    firstCount++;
+                }
+                BigDecimal yesterDayAllOrdSum = BigDecimal.ZERO;
+                for (Order order1 : yestOrders) {
+                    yesterDayAllOrdSum = yesterDayAllOrdSum.add(order1.getTotalPriceWithDisc());
+                }
+
+            DecimalFormat df = new DecimalFormat("### ###,000");
+                String cancel = "";
+                String orderPrice = ":dollar:<b>" + df.format(order.getTotalPriceWithDisc()) + "\u20BD" + "</b>" + "\n" ;
+                if(order.getIsCancel().equals("true")){
+                    cancel = ":name_badge: <b>ЗАКАЗ ОТМЕНЕН!</b>:name_badge:\n";
+                    orderPrice = ":stop_sign:<b>-" + df.format(order.getTotalPriceWithDisc()) + "\u20BD" + "</b>" + "\n" ;
+                }
+
+
+
+                String text = EmojiParser.parseToUnicode(dt + cancel + orderPrice +
+
+                        ":package:<b>" + order.getSupplierArticle() + "</b>\n" +
+                        "id:<a href=\"" + order.getWBLink() + "\">" + order.getNmId() + "</a>\n" +
+                        ":gear:" + order.getBrand() + "\n" +
+                        ":green_book:" + order.getCategory() + " / " +
+                        order.getSubject() + "\n" +
+                        ":triangular_ruler:" + order.getTechSize() + "\n" +
+                        ":truck:Логистика: <b>" + order.getLogisticPrice() + "\u20BD" + "</b>" + "\n" +
+                        ":rocket:<b>Сегодня таких " + todayCount +
+                        " шт на  " + df.format(todaySum) + "</b>" + "\u20BD" + "\n" +
+                        "Вчера таких <b>" + yestCount +
+                        " шт на " + df.format(yestSum) + "</b>" + "\u20BD" + "\n" +
+                        ":house:<b>" + order.getWarehouseName() + "</b>:arrow_right:" + order.getOblast() + "\n" +
+                        ":dart:<strong>СЕГОДНЯ заказов: " + (firstCount - 1) + "&#128293;" + "</strong> на СУММУ" + "\n" +
+                        ":moneybag: <b>" + df.format(sumToday) + "\u20BD" + "</b>" +
+                        "\n<i> Вчера заказано <b>" + yestOrders.size() + "</b> штук на " + df.format(yesterDayAllOrdSum) + "</i>" + "\u20BD");
+                sendPhoto.setCaption(text);
+                sendPhoto.setParseMode(ParseMode.HTML);
+                execute(sendPhoto);
+        }
+    }
+
+
+
 
     @Override
     public String getBotUsername() {

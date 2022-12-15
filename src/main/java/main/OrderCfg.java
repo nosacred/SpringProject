@@ -1,5 +1,6 @@
 package main;
 
+import main.model.TgUser;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -16,5 +17,6 @@ public class OrderCfg {
     }
     @Bean
     public PhotoBaseService getPhotoBaseService(){return new PhotoBaseService();}
+
 
 }

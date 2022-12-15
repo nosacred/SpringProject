@@ -38,7 +38,7 @@ public class GetOrder {
 
 
 
-    public  void getAllOrdersAtDate(ZonedDateTime localDate) throws IOException {
+    public  void getAllOrdersAtDate(ZonedDateTime localDate) throws IOException, InterruptedException {
 
         System.out.println( "Заказы за "+ localDate.format(formatterDate));
 
@@ -48,6 +48,10 @@ public class GetOrder {
         URL url = new URL(linkOrder + apiKey);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
+        while (!(connection.getResponseCode() ==200)){
+            TimeUnit.MINUTES.sleep(1);
+            url.openConnection();
+        }
         InputStream response = connection.getInputStream();
         String result = new BufferedReader(new InputStreamReader(response)).lines()
                 .parallel().collect(Collectors.joining("\n"));
@@ -69,14 +73,45 @@ public class GetOrder {
 
         System.out.println("Заказов добавлено/ Обновленно за "+localDate.format(formatterDate) + " " + ord.size() + " штук");
     }
+    public  ArrayList<Order> getAllOrdersToday() throws IOException {
+        ZonedDateTime localDate = ZonedDateTime.now(ZoneId.systemDefault());
+        System.out.println("Заказы за " + localDate.format(formatterDate));
+
+
+        String linkOrder = "https://suppliers-stats.wildberries.ru/api/v1/supplier/" +
+                "orders?dateFrom=" + localDate.toLocalDateTime().format(formatterDate) + "&flag=1&key=";
+        URL url = new URL(linkOrder + apiKey);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        InputStream response = connection.getInputStream();
+        String result = new BufferedReader(new InputStreamReader(response)).lines()
+                .parallel().collect(Collectors.joining("\n"));
+        System.out.println(result);
+        Gson gson = new GsonBuilder().registerTypeAdapter(ZonedDateTime.class, GsonHelper.ZDT_DESERIALIZER)
+                .create();
+
+
+        Order[] orders = gson.fromJson(result, Order[].class);
+        ArrayList<Order> ord = new ArrayList<>(Arrays.asList(orders));
+//        orderRepository.saveAll(ord);
+        ord.forEach(order -> {
+            try {
+                photoBaseService.setPhotos(order.getNmId());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+        });
+        return ord;
+    }
 
 
     public  ArrayList<Order> getNewOrdersNow() throws IOException, InterruptedException {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
-        ZonedDateTime zndNow = ZonedDateTime.now(ZoneId.systemDefault());
+        ZonedDateTime zndNow = ZonedDateTime.now(ZoneId.systemDefault()).minusMinutes(15);
         System.out.println( "Заказы за "+ zndNow.format(formatter));
         String linkOrder = "https://suppliers-stats.wildberries.ru/api/v1/supplier/" +
-                "orders?dateFrom="+ zndNow.toLocalDateTime().format(formatterDAteTime)+ "&flag=0&key=";
+                "orders?dateFrom="+ zndNow.toLocalDateTime().minusMinutes(55).format(formatterDAteTime)+ "&flag=0&key=";
         URL url = new URL(linkOrder + apiKey);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
@@ -93,7 +128,14 @@ public class GetOrder {
 
         Order[] orders = gson.fromJson(result, Order[].class);
         ArrayList<Order> newOrders = new ArrayList<>(Arrays.asList(orders));
-        orderRepository.saveAll(newOrders);
+//        orderRepository.saveAll(newOrders);
+        newOrders.forEach(order -> {
+            try {
+                photoBaseService.setPhotos(order.getNmId());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
         System.out.println("Добавлено/ Обновленно "+ newOrders.size() + " штук");
          return newOrders;
     }

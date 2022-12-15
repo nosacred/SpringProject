@@ -5,6 +5,7 @@ import javax.persistence.Table;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.ZonedDateTime;
+import java.util.Objects;
 
 @Entity
 @Table(name = "orders")
@@ -202,5 +203,37 @@ public class Order {
     public String getWBLink(){
 
         return "https://www.wildberries.ru/catalog/"+ nmId + "/detail.aspx?targetUrl=BP";
+    }
+
+    public double getLogisticPrice(){
+        double cancel = 33;
+        double logistic;
+        switch (warehouseName){
+            case ("Коледино") : logistic = 74; break;
+            case ("МЛП-Подольск") : logistic = 80.5;break;
+            case "Краснодар 2" : logistic = 20;break;
+            case "Казань" : logistic = 34;break;
+            case "Санкт-Петербург 2" : logistic = 21.5;break;
+            case "Санкт-Петербург" : logistic = 40;break;
+            case "Электросталь" : logistic = 57;break;
+            case "Екатеринбург" : logistic = 75;break;
+            case "Хабаровск" : logistic = 50;break;
+            case "Новосибирск" : logistic = 67.5;break;
+            default:  logistic = 74;break;
+            }
+            return logistic;
+        }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Order)) return false;
+        Order order = (Order) o;
+        return getOdid().equals(order.getOdid()) && getNmId().equals(order.getNmId()) && getSubject().equals(order.getSubject()) && getCategory().equals(order.getCategory());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getOdid(), getNmId(), getSubject(), getCategory());
     }
 }
