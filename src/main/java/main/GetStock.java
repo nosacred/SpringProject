@@ -31,14 +31,15 @@ public class GetStock {
 
         DateTimeFormatter formatterDateTime = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
         DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        ZonedDateTime localDate = ZonedDateTime.now(ZoneId.systemDefault()).minusDays(1);
+        ZonedDateTime localDate = ZonedDateTime.now(ZoneId.systemDefault()).minusDays(2);
         System.out.println("Остатки за " + localDate.format(formatterDate));
-        String apiKey = "ZTcyNDEyMWMtMDY2OS00M2VjLWIwMTItNjg2ZjdiYjFjODQx";
-        String linkOrder = "https://suppliers-stats.wildberries.ru/api/v1/supplier/" +
+        String apiKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3NJRCI6ImE2YWJkZDU2LWZlMDktNDU5NS05ZWZlLWUxOWRkMDY2MDdlOSJ9.wAtWxrXuugh5OPBV0USe7axFN7f2Vp7HVfLkQhQUw8o";
+        String linkOrder = " https://statistics-api.wildberries.ru/api/v1/supplier/" +
                 "stocks?dateFrom=" + localDate.format(formatterDate) + "T21:00:00.000Z&key=";
         URL url = new URL(linkOrder + apiKey);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
+        connection.setRequestProperty("Authorization",apiKey);
         InputStream response = connection.getInputStream();
         String result = new BufferedReader(new InputStreamReader(response)).lines()
                 .parallel().collect(Collectors.joining("\n"));

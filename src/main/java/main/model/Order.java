@@ -42,6 +42,15 @@ public class Order {
     private String gNumber;
     private String sticker;
     private String srid;
+    private String apiKey;
+
+    public String getApiKey() {
+        return apiKey;
+    }
+
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
+    }
 
     public ZonedDateTime getDate() {
         return date;
@@ -205,22 +214,22 @@ public class Order {
         return "https://www.wildberries.ru/catalog/"+ nmId + "/detail.aspx?targetUrl=BP";
     }
 
-    public double getLogisticPrice(){
-        double cancel = 33;
-        double logistic;
+    public BigDecimal getLogisticPrice(){
+        BigDecimal cancel =BigDecimal.valueOf(33);
+        BigDecimal logistic;
         switch (warehouseName){
-            case ("Коледино") : logistic = 74; break;
-            case ("МЛП-Подольск") : logistic = 80.5;break;
-            case "Краснодар 2" : logistic = 20;break;
-            case "Казань" : logistic = 34;break;
-            case "Санкт-Петербург 2" : logistic = 21.5;break;
-            case "Санкт-Петербург" : logistic = 40;break;
-            case "Электросталь" : logistic = 57;break;
-            case "Екатеринбург" : logistic = 75;break;
-            case "Хабаровск" : logistic = 50;break;
-            case "Новосибирск" : logistic = 67.5;break;
-            default:  logistic = 74;break;
+            case ("МЛП-Подольск") : logistic = BigDecimal.valueOf(80.5);break;
+            case "Краснодар 2" : logistic = BigDecimal.valueOf(20);break;
+            case "Казань" : logistic =BigDecimal.valueOf(34);break;
+            case "Санкт-Петербург 2" : logistic = BigDecimal.valueOf(20.5);break;
+            case "Санкт-Петербург" : logistic = BigDecimal.valueOf(32);break;
+            case "Электросталь" : logistic = BigDecimal.valueOf(49);break;
+            case "Екатеринбург" : logistic = BigDecimal.valueOf(75);break;
+            case "Хабаровск" : logistic = BigDecimal.valueOf(50);break;
+            case "Новосибирск" : logistic = BigDecimal.valueOf(67.5);break;
+            default:  logistic = BigDecimal.valueOf(70);break;
             }
+            if(isCancel.equals("true")) logistic =  logistic.add(cancel);
             return logistic;
         }
 

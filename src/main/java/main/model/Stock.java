@@ -16,7 +16,7 @@ public class Stock {
     private String lastChangeDate;
     private String supplierArticle;
     private String techSize;
-//    @Column(name = "barcode", updatable = false,insertable = false)
+    @Column(name = "barcode", updatable = false,insertable = false)
     @Id
     private String barcode;
     private int quantity;
@@ -33,20 +33,9 @@ public class Stock {
         this.barcode = barcode;
     }
 
-    public int getWarehouse() {
-        return warehouse;
-    }
-
-    public void setWarehouse(int warehouse) {
-        this.warehouse = warehouse;
-    }
-
-//    @Column(name = "warehouse", updatable = false,insertable = false)
+    @Column(name = "warehouseName", updatable = false,insertable = false)
     @Id
-    private int warehouse;
     private String warehouseName;
-    private int inWayToClient;
-    private int inWayFromClient;
     private String nmId;
     private String subject;
     private String category;
@@ -132,21 +121,6 @@ public class Stock {
         this.warehouseName = warehouseName;
     }
 
-    public int getInWayToClient() {
-        return inWayToClient;
-    }
-
-    public void setInWayToClient(int inWayToClient) {
-        this.inWayToClient = inWayToClient;
-    }
-
-    public int getInWayFromClient() {
-        return inWayFromClient;
-    }
-
-    public void setInWayFromClient(int inWayFromClient) {
-        this.inWayFromClient = inWayFromClient;
-    }
 
     public String getNmId() {
         return nmId;

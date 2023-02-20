@@ -1,8 +1,6 @@
 package main;
 
-import main.model.CustomOrderRepository;
-import main.model.Order;
-import main.model.OrderRepository;
+import main.model.*;
 import org.aspectj.weaver.ast.Or;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,10 +15,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -28,6 +24,9 @@ public class DefaultController {
 
     @Autowired
     private CustomOrderRepository customOrderRepository;
+
+    @Autowired
+    private StocksRepository stocksRepository;
 
     @Autowired
     private GetOrder getOrder;
@@ -42,6 +41,38 @@ public class DefaultController {
     @RequestMapping("/")
     public String index(){
         return ZonedDateTime.now().toString();
+    }
+
+
+    @GetMapping("/minus90")
+    public String getYesterDayOrders() throws IOException, InterruptedException {
+        getOrder.getNewOrdersMinus90();
+        getSale.getNewSalessMinus90();
+        return "done";
+    }
+
+    @GetMapping("/viewStocks")
+    public String viewStocks(){
+        ArrayList<Stock> stocks = (ArrayList<Stock>) stocksRepository.findAll();
+        stocks.sort(Comparator.comparing(Stock::getBarcode));
+        String ret = "<table><tr><th>Артикул вб</th>" +
+        "<th>Предмет</th>"+
+                "<th>Артикул поставщика </th>"+
+                "<th>Размер </th>"+
+                "<th>Склад</th>"+
+                "<th>Кол-во</th>"+
+                "<th>В пути </th></tr>";
+        for(Stock stock : stocks){
+           ret = ret.concat("<td>"+ stock.getNmId()+"</td>"+
+                    "<td>"+ stock.getSubject()+"</td>"+
+                    "<td>"+ stock.getSupplierArticle()+"</td>"+
+                    "<td>"+ stock.getTechSize()+"</td>"+
+                    "<td>"+ stock.getWarehouseName()+"</td>"+
+                    "<td>"+ stock.getQuantity()+"</td>"+
+                    "<td>"+ (stock.getQuantityFull() - stock.getQuantity())+"</td></tr>");
+        }
+        ret = ret.concat("</table");
+        return ret;
     }
 
     @GetMapping("/salesOrder")
@@ -150,5 +181,9 @@ public class DefaultController {
         return "Заказов за "+ zdt.format(formatter) + " "+ orders.size() + " штук\n"+ ret;
     }
 
+    @GetMapping("/alltoday")
+    public void getAllOrders() throws IOException {
+        getOrder.getAllOrdersToday();
+    }
 
 }

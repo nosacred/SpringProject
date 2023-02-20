@@ -254,7 +254,7 @@ public class Sale {
 
         return totalPrice.multiply(discount).multiply(promoDiscount).multiply(sppDiscount).setScale(2,RoundingMode.HALF_UP);
     }
-    String getWBLink(){
+    public String getWBLink(){
 
         return "https://www.wildberries.ru/catalog/"+ nmId + "/detail.aspx?targetUrl=BP";
     }

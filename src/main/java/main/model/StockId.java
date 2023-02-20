@@ -9,9 +9,9 @@ import java.util.Objects;
 
 public class StockId implements Serializable {
 
-    public StockId(String barcode, int warehouse) {
+    public StockId(String barcode, String  warehouseName) {
         this.barcode = barcode;
-        this.warehouse = warehouse;
+        this.warehouseName = warehouseName;
     }
 
     @Override
@@ -19,7 +19,7 @@ public class StockId implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         StockId stockId = (StockId) o;
-        return getWarehouse() == stockId.getWarehouse() && getBarcode().equals(stockId.getBarcode());
+        return getWarehouse().equals(stockId.getWarehouse()) && getBarcode().equals(stockId.getBarcode());
     }
 
     @Override
@@ -28,7 +28,6 @@ public class StockId implements Serializable {
     }
 
     public StockId() {
-
     }
 
     public String getBarcode() {
@@ -39,14 +38,14 @@ public class StockId implements Serializable {
         this.barcode = barcode;
     }
 
-    public int getWarehouse() {
-        return warehouse;
+    public String getWarehouse() {
+        return warehouseName;
     }
 
-    public void setWarehouse(int warehouse) {
-        this.warehouse = warehouse;
+    public void setWarehouse(String warehouseName) {
+        this.warehouseName = warehouseName;
     }
     private String barcode;
-    private int warehouse;
+    private String warehouseName;
 
 }
