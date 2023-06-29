@@ -24,7 +24,7 @@ public class StockService {
     public int getQuantity(ArrayList<Stock> stocks){
         int quantity=0;
         for(Stock stock : stocks){
-            quantity = quantity+  stock.getQuantity();
+            quantity = quantity +  stock.getQuantity();
         }
         return quantity;
     }

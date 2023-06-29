@@ -3,6 +3,7 @@ package main.model;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "photos")
@@ -27,4 +28,9 @@ public class PhotoBase {
     @Id
     private String nmId;
     private String photoLink;
+
+
+
+
+
 }

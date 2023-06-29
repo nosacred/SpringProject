@@ -246,6 +246,14 @@ public class Sale {
     private String category;
     private String brand;
     private String sticker;
+    private String apiKey;
+    public String getApiKey() {
+        return apiKey;
+    }
+
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
+    }
 
     BigDecimal getPriceWithDisc(){
         BigDecimal discount = new BigDecimal(100-discountPercent).divide(BigDecimal.valueOf(100),2,RoundingMode.HALF_UP);

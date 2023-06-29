@@ -8,6 +8,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -37,13 +38,10 @@ public class PhotoBaseService {
 
     public String getPhotoLink(String  nmId) throws InterruptedException {
         Optional<PhotoBase> photoBase = photoBaseRepository.findById(nmId);
-        if( photoBase.isPresent()){
-            return  photoBase.get().getPhotoLink();
-        }
-        else {
+        if (photoBase.isEmpty()) {
             setPhotos(nmId);
-            return photoBase.get().getPhotoLink();
         }
+        return  photoBase.get().getPhotoLink();
     }
 
 
@@ -51,10 +49,22 @@ public class PhotoBaseService {
     public  void setPhotos(String nmId) throws InterruptedException {
         if (photoBaseRepository.findById(nmId).isEmpty()) {
             System.setProperty("webdriver.chrome.driver", "selenium\\chromedriver.exe");
-            WebDriver webDriver = new ChromeDriver();
+//            ChromeOptions options = new ChromeOptions();
+            ChromeOptions options = new ChromeOptions();
+            options.addArguments("--remote-allow-origins=*");
+            options.addArguments("--disable-notifications");
+            options.addArguments("--disable-gpu");
+
+            options.addArguments("--disable-extensions");
+
+            options.addArguments("--no-sandbox");
+
+            options.addArguments("--disable-dev-shm-usage");
+            options.setCapability("browserVersion","111.0.5563.64");
+            options.setCapability("acceptInsecureCerts",true);
+            WebDriver webDriver = new ChromeDriver(options);
+
             try {
-
-
                 webDriver.get("https://www.wildberries.ru/catalog/" + nmId + "/detail.aspx?targetUrl=BP");
             } catch (Exception e) {
                 e.printStackTrace();
@@ -80,7 +90,7 @@ public class PhotoBaseService {
             PhotoBase photoBase = new PhotoBase();
             photoBase.setNmId(nmId);
             if(photoUrl.isEmpty()){
-                photoUrl="https://cdn.vectorstock.com/i/preview-1x/48/06/image-preview-icon-picture-placeholder-vector-31284806.jpg";
+                photoUrl="https://diamed.ru/wp-content/uploads/2020/11/nophoto.png";
             }
             photoBase.setPhotoLink(photoUrl);
             addPhoto(photoBase);
@@ -89,7 +99,9 @@ public class PhotoBaseService {
 
     public  void updatePhoto(String nmId) throws InterruptedException {
             System.setProperty("webdriver.chrome.driver", "selenium\\chromedriver.exe");
-            WebDriver webDriver = new ChromeDriver();
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--remote-allow-origins=*");
+        WebDriver webDriver = new ChromeDriver(options);
             webDriver.get("https://www.wildberries.ru/catalog/" + nmId + "/detail.aspx?targetUrl=BP");
             Thread.sleep(2500);
         System.out.println(" ПОлучение фото артикула "+ nmId);
@@ -110,8 +122,6 @@ public class PhotoBaseService {
                         System.out.println("Фото добавлено в базу");
                     }
                     else System.out.println("Ошибка! Нет ссылки на фото!");
-
-
 
     }
 }

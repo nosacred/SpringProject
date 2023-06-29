@@ -6,5 +6,6 @@ import java.time.ZonedDateTime;
 import java.util.List;
 
 public interface CustomSaleRepository extends CrudRepository<Sale,String> {
-    List<Sale> getSaleByDateBetweenOrderByDate (ZonedDateTime zonedDateTime1, ZonedDateTime zonedDateTime2);
+//    List<Sale> getSaleByApiKeyAndDateBetweenOrderByDate(ZonedDateTime zonedDateTime1, ZonedDateTime zonedDateTime2);
+    List<Sale> getSaleByApiKeyAndDateBetweenOrderByDate(String api, ZonedDateTime zonedDateTime1, ZonedDateTime zonedDateTime2);
 }

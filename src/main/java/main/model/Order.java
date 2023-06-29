@@ -1,4 +1,6 @@
 package main.model;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
@@ -10,7 +12,6 @@ import java.util.Objects;
 @Entity
 @Table(name = "orders")
 public class Order {
-
 
     private ZonedDateTime date;
     private ZonedDateTime lastChangeDate;
@@ -43,6 +44,16 @@ public class Order {
     private String sticker;
     private String srid;
     private String apiKey;
+
+    public String getOrderType() {
+        return orderType;
+    }
+
+    public void setOrderType(String orderType) {
+        this.orderType = orderType;
+    }
+
+    private String orderType;
 
     public String getApiKey() {
         return apiKey;
@@ -215,23 +226,30 @@ public class Order {
     }
 
     public BigDecimal getLogisticPrice(){
-        BigDecimal cancel =BigDecimal.valueOf(33);
+        BigDecimal cancel =BigDecimal.valueOf(50);
         BigDecimal logistic;
         switch (warehouseName){
-            case ("МЛП-Подольск") : logistic = BigDecimal.valueOf(80.5);break;
-            case "Краснодар 2" : logistic = BigDecimal.valueOf(20);break;
-            case "Казань" : logistic =BigDecimal.valueOf(34);break;
-            case "Санкт-Петербург 2" : logistic = BigDecimal.valueOf(20.5);break;
-            case "Санкт-Петербург" : logistic = BigDecimal.valueOf(32);break;
-            case "Электросталь" : logistic = BigDecimal.valueOf(49);break;
-            case "Екатеринбург" : logistic = BigDecimal.valueOf(75);break;
-            case "Хабаровск" : logistic = BigDecimal.valueOf(50);break;
-            case "Новосибирск" : logistic = BigDecimal.valueOf(67.5);break;
-            default:  logistic = BigDecimal.valueOf(70);break;
+            case ("МЛП-Подольск") :
+            case ("Подольск") :
+                logistic = BigDecimal.valueOf(83.5);break;
+            case "Краснодар 2" :
+            case "Краснодар" :
+                logistic = BigDecimal.valueOf(47.5);break;
+            case "Казань" : logistic =BigDecimal.valueOf(41.5);break;
+            case "Санкт-Петербург 2" : logistic = BigDecimal.valueOf(30);break;
+            case "Санкт-Петербург" : logistic = BigDecimal.valueOf(30);break;
+            case "Электросталь" : logistic = BigDecimal.valueOf(42.5);break;
+            case "Екатеринбург" : logistic = BigDecimal.valueOf(100);break;
+            case "Хабаровск" : logistic = BigDecimal.valueOf(80);break;
+            case "Новосибирск" : logistic = BigDecimal.valueOf(73.5);break;
+            case "Алексин" : logistic = BigDecimal.valueOf(35);break;
+
+            default:  logistic = BigDecimal.valueOf(69);break;
             }
             if(isCancel.equals("true")) logistic =  logistic.add(cancel);
             return logistic;
         }
+
 
     @Override
     public boolean equals(Object o) {

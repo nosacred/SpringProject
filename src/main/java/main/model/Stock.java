@@ -6,7 +6,9 @@ import org.springframework.stereotype.Service;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Entity
 @IdClass(StockId.class)
@@ -33,7 +35,7 @@ public class Stock {
         this.barcode = barcode;
     }
 
-    @Column(name = "warehouseName", updatable = false,insertable = false)
+    @Column(name = "warehouse_name", updatable = false,insertable = false)
     @Id
     private String warehouseName;
     private String nmId;
@@ -46,9 +48,21 @@ public class Stock {
     private BigDecimal price;
     @SerializedName("Discount")
     private int discount;
+    private String apiKey;
+
+    public String getApiKey() {
+        return apiKey;
+    }
+
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
+    }
+    final static DateTimeFormatter formatter  = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public String getLastChangeDate() {
-        return lastChangeDate;
+        LocalDateTime ldt =LocalDateTime.parse(lastChangeDate.substring(0,19), DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
+
+        return ldt.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss"));
     }
 
     public void setLastChangeDate(String lastChangeDate) {
